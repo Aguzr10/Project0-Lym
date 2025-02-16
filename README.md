@@ -1,4 +1,4 @@
-# Project0-Lym 🚀
+# Project0-LyM 🚀
 
 This project implements a **lexical and syntactical analyzer** for a language that controls a robot in a 2D world.
 
