@@ -1,7 +1,7 @@
 # Project0-Lym 🚀
 
-Este proyecto implementa un **analizador léxico y sintáctico** para un lenguaje que controla un robot en un mundo 2D.
+This project implements a **lexical and syntactical analyzer** for a language that controls a robot in a 2D world.
 
-## 📌 Características
-- ✅ **Lexer:** Convierte el código en tokens.
-- ✅ **Parser:** Verifica la sintaxis del lenguaje.
+## 📌 Features
+- ✅ **Lexer:** Converts code into tokens.
+- ✅ **Parser:** Checks the syntax of the language.
