@@ -1,5 +1,6 @@
 def lexer(code):
-    keywords = {"proc", "while:", "if:", "else:", "repeatTimes:", "for:" }
+    keywords = {"proc", "while:", "if:", "else:", "repeatTimes:", "for:", "move:", "jump:", "goto:", "turn:", "face:", "put:", "pick:", 
+        "canPut:", "canPick:", "pop:", "facing:", "canMove:", "canJump:", "not:"}
     symbols = {"|", "[", "]", ":=", "." }
     tokens = []
     
