@@ -1,3 +1,7 @@
+# Written by: 
+# Juliana Vera, code: 202411275 email: j.veraq@uniandes.edu.co
+# Alejandro Guzmán code: 202410186 email: a.guzmanr2@uniandes.edu.co
+
 def lexer(code):
     keywords = {"proc", "while:", "if:", "else:", "repeatTimes:", "for:", "move:", "jump:", "goto:", "turn:", "face:", "put:", "pick:", 
         "canPut:", "canPick:", "pop:", "facing:", "canMove:", "canJump:", "not:"}
