@@ -49,3 +49,68 @@ def lexer(code):
             tokens.append(("IDENTIFIER", word))
 
     return tokens
+
+
+
+def parser(tokens):
+    
+    """
+    Verifies if the syntax of the code is correct.
+    """
+    
+    pos = 0
+    correct = None
+    
+    def current_token():
+        return tokens[pos] if pos < len(tokens) else None
+    
+    def advance():
+        # advances to the next token and returns True if there are more tokens
+        
+        nonlocal pos
+        pos += 1
+        return pos < len(tokens)
+    
+    def parse_procedure():
+        # verifies procedure structure
+        
+        if current_token() is None or current_token()[0] != "IDENTIFIER":
+            return False
+        advance()
+        
+        if current_token() is not None or current_token()[0] == "SYMBOL" and current_token()[1] == ":":
+            advance()
+            if current_token() is None or current_token()[0] != "IDENTIFIER":
+                return False
+            advance()
+            
+        if current_token() is None or current_token()[0] != "SYMBOL" or current_token()[1] != "[":
+            return False
+        advance()
+        
+        return parse_block()
+    
+    def parse_block():
+        # verifies structure within a code
+        
+        while current_token() is not None and current_token()[0] != "SYMBOL" and current_token()[1] != "]":
+            advance()
+            
+        if current_token() is None or current_token()[0] != "SYMBOL" or current_token()[1] != "]":
+            return False
+        
+        advance()
+        return True
+    
+    while pos < len(tokens):
+        if current_token()[0] == "KEYWORD" and current_token()[1] == "proc":
+            advance()
+            if not parse_procedure():
+                correct = "NO"
+                return correct
+            else: 
+                correct = "NO"
+                return correct
+    
+    correct = "YES"
+    return correct
