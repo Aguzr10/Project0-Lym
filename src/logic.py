@@ -59,7 +59,6 @@ def parser(tokens):
     """
     
     pos = 0
-    correct = None
     
     def current_token():
         return tokens[pos] if pos < len(tokens) else None
@@ -106,11 +105,8 @@ def parser(tokens):
         if current_token()[0] == "KEYWORD" and current_token()[1] == "proc":
             advance()
             if not parse_procedure():
-                correct = "NO"
-                return correct
+                return False
             else: 
-                correct = "NO"
-                return correct
+                return False
     
-    correct = "YES"
-    return correct
+    return True
