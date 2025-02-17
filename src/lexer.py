@@ -10,37 +10,32 @@ def lexer(code):
     No usa librerías externas ni clases.
     """
 
-    # Lista de palabras clave (sin los ":" ya que se separarán)
+    # list of keywords (excluding ":" which is taken as its own symbol")
     keywords = {
         "proc", "while", "if", "else", "repeatTimes", "for", "move", "jump", "goto",
         "turn", "face", "put", "pick", "canPut", "canPick", "pop", "facing", "canMove",
         "canJump", "not", "do", "then", "toThe", "inDir", "ofType", "with"
     }
 
-    # Conjunto de símbolos que necesitamos reconocer
-    # Incluye "|" , "[" , "]", "." , ":=" y ":" (este último para separar palabras clave)
+    # set of symbols that need to be recognized
     symbols = {"|", "[", "]", ".", ":=", ":"}
 
-    # Nota: Cualquier token que comience con '#' se clasifica como dirección
-    # (por ejemplo, "#north", "#south", etc.)
+    # insert spaces around symbols to separate them from other tokens
 
-    # Pre-procesamiento: Insertar espacios alrededor de los símbolos para separarlos.
-    # Primero, separar el símbolo compuesto ":=".
     code = code.replace(":=", " := ")
-    # Luego, separar el símbolo ":".
+
     code = code.replace(":", " : ")
-    # Separar los corchetes, el pipe y el punto.
+
     code = code.replace("[", " [ ")
     code = code.replace("]", " ] ")
     code = code.replace("|", " | ")
     code = code.replace(".", " . ")
 
-    # Convertir a lista de tokens "crudos" (basados en espacios)
+    # convert into list of tokens based on spaces
     words = code.split()
 
-    tokens = []  # Lista final de tokens (cada token es una tupla: (tipo, valor))
+    tokens = []  # final token list, every token is a tuple, classified below
 
-    # Clasificar cada token
     for word in words:
         if word in keywords:
             tokens.append(("KEYWORD", word))
@@ -51,7 +46,6 @@ def lexer(code):
         elif word.isdigit():
             tokens.append(("NUMBER", word))
         else:
-            # Se asume que cualquier otro token es un identificador
             tokens.append(("IDENTIFIER", word))
 
     return tokens
