@@ -1,14 +1,27 @@
-from logic import lexer, parser
+# Written by: 
+# Juliana Vera, code: 202411275 email: j.veraq@uniandes.edu.co
+# Alejandro Guzmán code: 202410186 email: a.guzmanr2@uniandes.edu.co
 
+from logic import lexer, parser  
 
-def leer_archivo(nombre_archivo):
-    with open(nombre_archivo, "r") as file:
-        return file.readlines()  # Devuelve una lista de líneas
+def read_file():
+    """
+    Prompts the user for the file name and reads it.
+    Returns the contents of the file as a text string.
+    """
+    filename = input("Enter the file name: ")
+    
+    try:
+        with open(filename, "r") as file:
+            return file.read()  # Read the entire file as a single string
+    except FileNotFoundError:
+        print(f"Error: The file '{filename}' was not found.")
+        return None
 
 if __name__ == "__main__":
-    lineas = leer_archivo("codigo.txt")  
-    codigo = "".join(lineas)  # Convierte la lista en una sola cadena
-
-    tokens = lexer(codigo)
-    resultado = parser(tokens)
-    print(resultado)  # "Sí" o "No"
+    codigo = read_file()
+    
+    if codigo is not None:  
+        tokens = lexer(codigo)
+        result = parser(tokens)  
+        print(result)  # Should print True if the code is valid, False if not
