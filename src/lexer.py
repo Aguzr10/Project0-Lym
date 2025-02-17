@@ -4,10 +4,10 @@
 
 def lexer(code):
     """
-    Analizador léxico para el lenguaje del robot.
-    Convierte el código en una lista de tokens.
-    Maneja palabras clave, símbolos, direcciones y números.
-    No usa librerías externas ni clases.
+    Lexical analyzer for the robot language.
+    Converts code into a list of tokens.
+    Manages keywords, symbols, directions and numbers.
+    Does not use external libraries or classes.
     """
 
     # list of keywords (excluding ":" which is taken as its own symbol")
