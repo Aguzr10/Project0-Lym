@@ -1,5 +1,5 @@
-from lexer import tokenize
-from parser import parse
+from logic import lexer, parser
+
 
 def leer_archivo(nombre_archivo):
     with open(nombre_archivo, "r") as file:
@@ -9,6 +9,6 @@ if __name__ == "__main__":
     lineas = leer_archivo("codigo.txt")  
     codigo = "".join(lineas)  # Convierte la lista en una sola cadena
 
-    tokens = tokenize(codigo)
-    resultado = parse(tokens)
+    tokens = lexer(codigo)
+    resultado = parser(tokens)
     print(resultado)  # "Sí" o "No"
