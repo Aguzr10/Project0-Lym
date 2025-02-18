@@ -91,8 +91,7 @@ def parser(tokens):
             return False
         advance()
 
-        return parse_block()        
-        
+        return parse_block()  
     
     def parse_block():
         # verifies structure within a code
