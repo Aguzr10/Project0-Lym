@@ -100,18 +100,15 @@ def parser(tokens):
             if current_token()[0] == "KEYWORD" and current_token()[1] == "proc":
                 if not parse_procedure():
                     return False
+            elif current_token()[0] == "IDENTIFIER":
+                if current_token()[1] not in variables:
+                    print(f"Error: Variable {current_token()[1]} is not declared.")
             advance()
 
         if current_token() is None or current_token()[0] != "SYMBOL" or current_token()[1] != "]":
             return False
         advance()
+        
         return True
     
-    while pos < len(tokens):
-        if current_token()[0] == "KEYWORD" and current_token()[1] == "proc":
-            advance()
-            if not parse_procedure():
-                return False
     
-    return True
-
