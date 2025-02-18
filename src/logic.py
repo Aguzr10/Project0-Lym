@@ -53,24 +53,31 @@ def parser(tokens):
         pos += 1
 
     def parse_variable_declaration():
-        if current_token()[1] != "|":
+        advance()  # Skip 'new'
+        if not (current_token()[0] == "KEYWORD" and current_token()[1] == "var"):
             return False
-        advance()  # Skip '|'
+        advance()  # Skip 'var'
         
-        while current_token()[1] != "|":
+        while True:
             if current_token()[0] != "IDENTIFIER":
                 return False
-            variables.add(current_token()[1])
+            var_name = current_token()[1]
+            variables.add(var_name)
             advance()
-            if current_token()[1] == ",":
+
+            if current_token() and current_token()[1] == "=":
+                advance()  # Skip '='
+                if current_token()[0] not in ["NUMBER", "IDENTIFIER"]:
+                    return False
                 advance()
-        
-        advance()  # Skip '|'
+            
+            if current_token() and current_token()[1] == ",":
+                advance()
+            else:
+                break
         return True
 
     def parse_procedure():
-        if current_token()[0] != "IDENTIFIER":
-            return False
         proc_name = current_token()[1]
         advance()
         
@@ -79,11 +86,9 @@ def parser(tokens):
         advance()  # Skip ':'
         
         params = []
-        while current_token()[0] == "IDENTIFIER":
+        while current_token() and current_token()[0] == "IDENTIFIER":
             params.append(current_token()[1])
             advance()
-            if current_token()[1] == "and":
-                advance()
         
         procedures[proc_name] = params
         
@@ -91,10 +96,7 @@ def parser(tokens):
             return False
         advance()  # Skip '['
         
-        if not parse_variable_declaration():
-            return False
-        
-        while current_token()[1] != "]":
+        while current_token() and current_token()[1] != "]":
             if not parse_statement():
                 return False
         advance()  # Skip ']'
@@ -104,12 +106,9 @@ def parser(tokens):
         advance()  # Skip 'if'
         if not parse_condition():
             return False
-        if current_token()[1] != "then":
-            return False
-        advance()  # Skip 'then'
         if not parse_block():
             return False
-        if current_token()[1] == "else":
+        if current_token() and current_token()[1] == "else":
             advance()  # Skip 'else'
             if not parse_block():
                 return False
@@ -119,9 +118,6 @@ def parser(tokens):
         advance()  # Skip 'while'
         if not parse_condition():
             return False
-        if current_token()[1] != "do":
-            return False
-        advance()  # Skip 'do'
         if not parse_block():
             return False
         return True
@@ -134,13 +130,15 @@ def parser(tokens):
             return False
         advance()  # Skip '('
         
-        while current_token()[1] != ")":
+        while current_token() and current_token()[1] != ")":
             if current_token()[0] not in ["NUMBER", "IDENTIFIER"]:
                 return False
             advance()
-            if current_token()[1] == ",":
+            if current_token() and current_token()[1] == ",":
                 advance()
         
+        if current_token()[1] != ")":
+            return False
         advance()  # Skip ')'
         return True
 
@@ -168,7 +166,7 @@ def parser(tokens):
             return False
         advance()
         
-        while current_token()[1] != "}":
+        while current_token() and current_token()[1] != "}":
             if not parse_statement():
                 return False
         advance()
@@ -181,143 +179,9 @@ def parser(tokens):
                 return parse_if()
             elif token[1] == "while":
                 return parse_while()
-            elif token[1] == "repeatTimes":
-                return parse_repeat_times()
-            elif token[1] == "for":
-                return parse_for()
-            elif token[1] == "move":
-                return parse_move()
-            elif token[1] == "jump":
-                return parse_jump()
-            elif token[1] == "goto":
-                return parse_goto()
-            elif token[1] == "turn":
-                return parse_turn()
-            elif token[1] == "face":
-                return parse_face()
-            elif token[1] == "put":
-                return parse_put()
-            elif token[1] == "pick":
-                return parse_pick()
-            elif token[1] == "nop":
-                advance()
-                return True
         elif token[0] == "IDENTIFIER":
             if token[1] in procedures:
                 return parse_procedure_call()
-        advance()
-        return True
-
-    def parse_repeat_times():
-        advance()  # Skip 'repeatTimes'
-        if not parse_expression():
-            return False
-        if current_token()[1] != "repeat":
-            return False
-        advance()  # Skip 'repeat'
-        if not parse_block():
-            return False
-        return True
-
-    def parse_for():
-        advance()  # Skip 'for'
-        if not parse_expression():
-            return False
-        if current_token()[1] != "repeat":
-            return False
-        advance()  # Skip 'repeat'
-        if not parse_block():
-            return False
-        return True
-
-    def parse_move():
-        advance()  # Skip 'move'
-        if not parse_expression():
-            return False
-        if current_token()[1] == "toThe":
-            advance()  # Skip 'toThe'
-            if not parse_direction():
-                return False
-        elif current_token()[1] == "inDir":
-            advance()  # Skip 'inDir'
-            if not parse_orientation():
-                return False
-        return True
-
-    def parse_jump():
-        advance()  # Skip 'jump'
-        if not parse_expression():
-            return False
-        if current_token()[1] == "toThe":
-            advance()  # Skip 'toThe'
-            if not parse_direction():
-                return False
-        elif current_token()[1] == "inDir":
-            advance()  # Skip 'inDir'
-            if not parse_orientation():
-                return False
-        return True
-
-    def parse_goto():
-        advance()  # Skip 'goto'
-        if not parse_expression():
-            return False
-        if current_token()[1] != "with":
-            return False
-        advance()  # Skip 'with'
-        if not parse_expression():
-            return False
-        return True
-
-    def parse_turn():
-        advance()  # Skip 'turn'
-        if not parse_direction():
-            return False
-        return True
-
-    def parse_face():
-        advance()  # Skip 'face'
-        if not parse_orientation():
-            return False
-        return True
-
-    def parse_put():
-        advance()  # Skip 'put'
-        if not parse_expression():
-            return False
-        if current_token()[1] != "ofType":
-            return False
-        advance()  # Skip 'ofType'
-        if not parse_type():
-            return False
-        return True
-
-    def parse_pick():
-        advance()  # Skip 'pick'
-        if not parse_expression():
-            return False
-        if current_token()[1] != "ofType":
-            return False
-        advance()  # Skip 'ofType'
-        if not parse_type():
-            return False
-        return True
-
-    def parse_direction():
-        if current_token()[1] not in ["#left", "#right", "#front", "#back"]:
-            return False
-        advance()
-        return True
-
-    def parse_orientation():
-        if current_token()[1] not in ["#north", "#south", "#west", "#east"]:
-            return False
-        advance()
-        return True
-
-    def parse_type():
-        if current_token()[1] not in ["#balloons", "#chips"]:
-            return False
         advance()
         return True
 
