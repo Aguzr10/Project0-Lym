@@ -58,22 +58,19 @@ def parser(tokens):
     """
     
     pos = 0
-    procedures = set()
-    variables = set()
+    procedures = set()  # Set for procedures
+    variables = set()   # Set for declared variables
     
     
     def current_token():
         return tokens[pos] if pos < len(tokens) else None
     
     def advance():
-        # advances to the next token and returns True if there are more tokens        
         nonlocal pos
         pos += 1
         return pos < len(tokens)
     
     def parse_procedure():
-        # verifies procedure structure
-        
         if current_token() is None or current_token()[0] != "IDENTIFIER":
             return False
         proc_name = current_token()[1]
@@ -83,7 +80,10 @@ def parser(tokens):
             return False
         advance()
 
-        # Add procedure to procedure set
+        # Add procedure to procedure set (to handle recursion)
+        if proc_name in procedures:
+            print(f"Error: Procedure {proc_name} is already defined.")
+            return False
         procedures.add(proc_name)
 
         if current_token() is None or current_token()[0] != "SYMBOL" or current_token()[1] != "[":
@@ -91,10 +91,8 @@ def parser(tokens):
         advance()
 
         return parse_block()  
-    
+
     def parse_block():
-        # verifies structure within a code
-        
         while current_token() is not None and current_token()[0] != "SYMBOL" and current_token()[1] != "]":
             if current_token()[0] == "KEYWORD" and current_token()[1] == "proc":
                 if not parse_procedure():
@@ -102,6 +100,7 @@ def parser(tokens):
             elif current_token()[0] == "IDENTIFIER":
                 if current_token()[1] not in variables:
                     print(f"Error: Variable {current_token()[1]} is not declared.")
+                    return False
             advance()
 
         if current_token() is None or current_token()[0] != "SYMBOL" or current_token()[1] != "]":
@@ -111,13 +110,12 @@ def parser(tokens):
         return True
     
     def parse_variable_declaration():
-        
         if current_token() is None or current_token()[0] != "SYMBOL" or current_token()[1] != "|":
             return False
         advance()
 
         while current_token() is not None and current_token()[0] == "IDENTIFIER":
-            variables.add(current_token()[1])  # Add the declared variable to the set
+            variables.add(current_token()[1])
             advance()
 
         if current_token() is None or current_token()[0] != "SYMBOL" or current_token()[1] != "|":
@@ -125,7 +123,7 @@ def parser(tokens):
         advance()
         return True
     
-    while pos<len(tokens):
+    while pos < len(tokens):
         if current_token()[0] == "KEYWORD" and current_token()[1] == "proc":
             advance()
             if not parse_procedure():
@@ -145,4 +143,4 @@ def parser(tokens):
         else:
             advance()
             
-    return True 
+    return True
