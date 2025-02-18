@@ -9,7 +9,7 @@ def lexer(code):
     Manages keywords, symbols, directions and numbers.
     Does not use external libraries or classes.
     """
-
+    
     # list of keywords (excluding ":" which is taken as its own symbol")
     keywords = {
         "proc", "while", "if", "else", "repeatTimes", "for", "move", "jump", "goto",
@@ -49,7 +49,6 @@ def lexer(code):
             tokens.append(("IDENTIFIER", word))
 
     return tokens
-
 
 
 def parser(tokens):
