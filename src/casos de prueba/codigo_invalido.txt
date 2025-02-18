@@ -1,0 +1,5 @@
+|t1 t2|
+proc move: n [ 
+    move: 1 inDir: #north . 
+]
+turnRight: 1 .
