@@ -39,6 +39,7 @@ def lexer(code):
             tokens.append(("IDENTIFIER", word))
     
     return tokens
+    
 
 def parser(tokens):
     pos = 0
@@ -52,152 +53,122 @@ def parser(tokens):
         nonlocal pos
         pos += 1
 
-    def parse_variable_declaration():
-        advance()  # Skip 'new'
-        if not (current_token()[0] == "KEYWORD" and current_token()[1] == "var"):
-            return False
-        advance()  # Skip 'var'
-        
-        while True:
-            if current_token()[0] != "IDENTIFIER":
-                return False
-            var_name = current_token()[1]
-            variables.add(var_name)
+    def match(expected_type, expected_value=None):
+        token = current_token()
+        if token and token[0] == expected_type and (expected_value is None or token[1] == expected_value):
             advance()
+            return True
+        return False
 
-            if current_token() and current_token()[1] == "=":
-                advance()  # Skip '='
-                if current_token()[0] not in ["NUMBER", "IDENTIFIER"]:
-                    return False
-                advance()
-            
+    def parse_variable_declaration():
+        if not match("SYMBOL", "|"):
+            return False
+        while current_token() and current_token()[1] != "|":
+            if not match("IDENTIFIER"):
+                return False
+            variables.add(tokens[pos - 1][1])
             if current_token() and current_token()[1] == ",":
                 advance()
-            else:
-                break
-        return True
+        return match("SYMBOL", "|")
 
     def parse_procedure():
-        proc_name = current_token()[1]
-        advance()
-        
-        if current_token()[1] != ":":
+        if not match("KEYWORD", "proc"):
             return False
-        advance()  # Skip ':'
-        
-        params = []
-        while current_token() and current_token()[0] == "IDENTIFIER":
-            params.append(current_token()[1])
-            advance()
-        
-        procedures[proc_name] = params
-        
-        if current_token()[1] != "[":
+        if not match("IDENTIFIER"):
             return False
-        advance()  # Skip '['
+        proc_name = tokens[pos - 1][1]
+        procedures[proc_name] = []
+
+        if match("SYMBOL", ":"):
+            while current_token() and current_token()[0] == "IDENTIFIER":
+                procedures[proc_name].append(current_token()[1])
+                advance()
         
+        if not match("SYMBOL", "["):
+            return False
         while current_token() and current_token()[1] != "]":
             if not parse_statement():
                 return False
-        advance()  # Skip ']'
-        return True
+        return match("SYMBOL", "]")
 
     def parse_if():
-        advance()  # Skip 'if'
+        if not match("KEYWORD", "if"):
+            return False
         if not parse_condition():
+            return False
+        if not match("KEYWORD", "then"):
             return False
         if not parse_block():
             return False
         if current_token() and current_token()[1] == "else":
-            advance()  # Skip 'else'
+            advance()
             if not parse_block():
                 return False
         return True
 
     def parse_while():
-        advance()  # Skip 'while'
+        if not match("KEYWORD", "while"):
+            return False
         if not parse_condition():
+            return False
+        if not match("KEYWORD", "do"):
             return False
         if not parse_block():
             return False
         return True
 
     def parse_procedure_call():
-        proc_name = current_token()[1]
-        advance()
-        
-        if current_token()[1] != "(":
+        if not match("IDENTIFIER"):
             return False
-        advance()  # Skip '('
-        
-        while current_token() and current_token()[1] != ")":
-            if current_token()[0] not in ["NUMBER", "IDENTIFIER"]:
+        proc_name = tokens[pos - 1][1]
+        if not match("SYMBOL", ":"):
+            return False
+        while current_token() and current_token()[1] != ".":
+            if not match("NUMBER") and not match("IDENTIFIER"):
                 return False
-            advance()
             if current_token() and current_token()[1] == ",":
                 advance()
-        
-        if current_token()[1] != ")":
-            return False
-        advance()  # Skip ')'
-        return True
+        return match("SYMBOL", ".")
 
     def parse_condition():
-        if current_token()[1] == "(":
-            advance()  # Skip '('
+        if match("SYMBOL", "("):
             if not parse_expression():
                 return False
-            if current_token()[1] != ")":
-                return False
-            advance()  # Skip ')'
-        else:
-            if not parse_expression():
-                return False
-        return True
+            return match("SYMBOL", ")")
+        return parse_expression()
 
     def parse_expression():
-        if current_token()[0] not in ["IDENTIFIER", "NUMBER"]:
+        if not match("IDENTIFIER") and not match("NUMBER"):
             return False
-        advance()
         return True
 
     def parse_block():
-        if current_token()[1] != "{":
+        if not match("SYMBOL", "["):
             return False
-        advance()
-        
-        while current_token() and current_token()[1] != "}":
+        while current_token() and current_token()[1] != "]":
             if not parse_statement():
                 return False
-        advance()
-        return True
+        return match("SYMBOL", "]")
 
     def parse_statement():
-        token = current_token()
-        if token[0] == "KEYWORD":
-            if token[1] == "if":
+        if current_token()[0] == "KEYWORD":
+            if current_token()[1] == "if":
                 return parse_if()
-            elif token[1] == "while":
+            elif current_token()[1] == "while":
                 return parse_while()
-        elif token[0] == "IDENTIFIER":
-            if token[1] in procedures:
+        elif current_token()[0] == "IDENTIFIER":
+            if current_token()[1] in procedures:
                 return parse_procedure_call()
-        advance()
-        return True
+        return match("SYMBOL", ".")
 
     # Main parsing logic
     while pos < len(tokens):
-        token = current_token()
-        if token[0] == "KEYWORD":
-            if token[1] == "new":
-                if not parse_variable_declaration():
-                    return False
-            elif token[1] == "proc":
-                advance()
-                if not parse_procedure():
-                    return False
-            else:
-                advance()
+        if current_token()[0] == "SYMBOL" and current_token()[1] == "|":
+            if not parse_variable_declaration():
+                return False
+        elif current_token()[0] == "KEYWORD" and current_token()[1] == "proc":
+            if not parse_procedure():
+                return False
         else:
             advance()
     
