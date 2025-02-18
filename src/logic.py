@@ -16,10 +16,10 @@ def lexer(code):
         "turn", "face", "put", "pick", "canPut", "canPick", "pop", "facing", "canMove",
         "canJump", "not", "do", "then", "toThe", "inDir", "ofType", "with"
     }
-
+    
     # Set of symbols to be recognized
     symbols = {"|", "[", "]", ".", ":=", ":"}
-
+    
     # Insert spaces around symbols to separate them from other tokens
     code = code.replace(":=", " := ")
     code = code.replace(":", " : ")
@@ -27,11 +27,11 @@ def lexer(code):
     code = code.replace("]", " ] ")
     code = code.replace("|", " | ")
     code = code.replace(".", " . ")
-
+    
     # Convert into a list of tokens based on spaces
     words = code.split()
-
-    tokens = []  # Final token list, every token is a tuple, classified below
+    
+    tokens = []  # Each token is a tuple: (type, value)
     for word in words:
         if word in keywords:
             tokens.append(("KEYWORD", word))
@@ -43,20 +43,19 @@ def lexer(code):
             tokens.append(("NUMBER", word))
         else:
             tokens.append(("IDENTIFIER", word))
-
+    
     return tokens
 
 
 def parser(tokens):
     """
     Verifies if the syntax of the code is correct.
+    Returns True if the program follows the language rules; otherwise, False.
     """
-
     pos = 0
-    procedures = set()  # Set for procedures
-    variables = set()   # Set for declared variables
-    procedure_params = {}  # Dictionary for procedure parameters
-    
+    procedures = {}       # Dictionary: procedure name -> list of parameters
+    variables = set()     # Set of declared variables
+
     def current_token():
         return tokens[pos] if pos < len(tokens) else None
 
@@ -65,88 +64,106 @@ def parser(tokens):
         pos += 1
         return pos < len(tokens)
 
+    def skip_line_number():
+        # If the current token is a NUMBER and is used as a line number, skip it.
+        if current_token() and current_token()[0] == "NUMBER":
+            advance()
+
+    def parse_variable_declaration():
+        # Expects: | var1 var2 ... |
+        if current_token() is None or current_token()[0] != "SYMBOL" or current_token()[1] != "|":
+            return False
+        advance()  # Skip opening "|"
+        while current_token() is not None and current_token()[0] == "IDENTIFIER":
+            variables.add(current_token()[1])
+            advance()
+        if current_token() is None or current_token()[0] != "SYMBOL" or current_token()[1] != "|":
+            return False
+        advance()  # Skip closing "|"
+        return True
+
     def parse_procedure():
-        # Verifies procedure structure
+        # Skip any line number tokens
+        while current_token() and current_token()[0] == "NUMBER":
+            advance()
+        # Expect: IDENTIFIER (procedure name)
         if current_token() is None or current_token()[0] != "IDENTIFIER":
             return False
         proc_name = current_token()[1]
         advance()
-
+        # Expect: SYMBOL ":" 
         if current_token() is None or current_token()[0] != "SYMBOL" or current_token()[1] != ":":
             return False
-        advance()
-
-        # Add procedure to procedure set (to handle recursion)
-        if proc_name in procedures:
-            print(f"Error: Procedure {proc_name} is already defined.")
-            return False
-        procedures.add(proc_name)
-
-        # Parse parameters (if any)
+        advance()  # Skip ":"
+        
+        # Parse parameters (optional)
         params = []
-        if current_token() is not None and current_token()[0] == "IDENTIFIER":
+        # First parameter (if exists)
+        if current_token() and current_token()[0] == "IDENTIFIER":
             params.append(current_token()[1])
             advance()
-
+        # Additional parameters in the form: IDENTIFIER, ":" IDENTIFIER
+        while current_token() and current_token()[0] == "IDENTIFIER":
+            connector = current_token()[1]
+            advance()
+            if current_token() is None or current_token()[0] != "SYMBOL" or current_token()[1] != ":":
+                # If no colon, assume parameters ended.
+                break
+            advance()  # Skip ":"
+            if current_token() is None or current_token()[0] != "IDENTIFIER":
+                return False
+            params.append(current_token()[1])
+            advance()
+        
+        procedures[proc_name] = params
+        
+        # Expect: SYMBOL "[" to start the procedure block
         if current_token() is None or current_token()[0] != "SYMBOL" or current_token()[1] != "[":
             return False
-        advance()
-
-        # Add procedure parameters to the dictionary
-        procedure_params[proc_name] = params
-
-        return parse_block()
+        advance()  # Skip "["
+        if not parse_block():
+            return False
+        return True
 
     def parse_block():
-        while current_token() is not None and current_token()[0] != "SYMBOL" and current_token()[1] != "]":
-            if current_token()[0] == "KEYWORD" and current_token()[1] == "proc":
+        # Parse tokens until a closing bracket "]" is encountered.
+        while current_token() is not None and not (current_token()[0] == "SYMBOL" and current_token()[1] == "]"):
+            # Skip line numbers in block
+            while current_token() and current_token()[0] == "NUMBER":
+                advance()
+            # If a new procedure definition starts within the block
+            if current_token() and current_token()[0] == "KEYWORD" and current_token()[1] == "proc":
+                advance()  # Skip "proc"
                 if not parse_procedure():
                     return False
-            elif current_token()[0] == "IDENTIFIER":
-                if current_token()[1] not in variables:
-                    print(f"Error: Variable {current_token()[1]} is not declared.")
+            # If an identifier is found, it must be either a variable or a procedure call.
+            elif current_token() and current_token()[0] == "IDENTIFIER":
+                ident = current_token()[1]
+                if ident not in variables and ident not in procedures:
+                    print(f"Error: Identifier '{ident}' is not declared.")
                     return False
-            advance()
-
+                advance()
+            else:
+                advance()
         if current_token() is None or current_token()[0] != "SYMBOL" or current_token()[1] != "]":
             return False
-        advance()
-
-        return True
-    
-    def parse_variable_declaration():
-        # Verifies variable declaration (| var1 var2 ... |)
-        if current_token() is None or current_token()[0] != "SYMBOL" or current_token()[1] != "|":
-            return False
-        advance()
-
-        while current_token() is not None and current_token()[0] == "IDENTIFIER":
-            variables.add(current_token()[1])  # Add the declared variable to the set
-            advance()
-
-        if current_token() is None or current_token()[0] != "SYMBOL" or current_token()[1] != "|":
-            return False
-        advance()
+        advance()  # Skip closing "]"
         return True
 
+    # Main parsing loop:
     while pos < len(tokens):
-        if current_token()[0] == "KEYWORD" and current_token()[1] == "proc":
-            advance()
-            if not parse_procedure():
-                return False
-
-        elif current_token()[0] == "SYMBOL" and current_token()[1] == "|":
+        skip_line_number()
+        if current_token() is None:
+            break
+        if current_token()[0] == "SYMBOL" and current_token()[1] == "|":
             if not parse_variable_declaration():
                 return False
-
-        elif current_token()[0] == "IDENTIFIER":
-            if current_token()[1] not in variables and current_token()[1] not in procedures:
-                print(f"Error: Variable {current_token()[1]} is not declared.")
+        elif current_token()[0] == "KEYWORD" and current_token()[1] == "proc":
+            advance()  # Skip "proc"
+            if not parse_procedure():
                 return False
-        
-            advance()
-
         else:
+            # Skip any token we don't specifically process
             advance()
-
+    
     return True
