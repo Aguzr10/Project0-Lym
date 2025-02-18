@@ -111,4 +111,39 @@ def parser(tokens):
         
         return True
     
+    def parse_variable_declaration():
+        
+        if current_token() is None or current_token()[0] != "SYMBOL" or current_token()[1] != "|":
+            return False
+        advance()
+
+        while current_token() is not None and current_token()[0] == "IDENTIFIER":
+            variables.add(current_token()[1])  # Add the declared variable to the set
+            advance()
+
+        if current_token() is None or current_token()[0] != "SYMBOL" or current_token()[1] != "|":
+            return False
+        advance()
+        return True
     
+    while pos<len(tokens):
+        if current_token()[0] == "KEYWORD" and current_token()[1] == "proc":
+            advance()
+            if not parse_procedure():
+                return False
+        
+        elif current_token()[0] == "SYMBOL" and current_token()[1] == "|":
+            if not parse_variable_declaration():
+                return False
+            
+        elif current_token()[0] == "IDENTIFIER":
+            if current_token()[1] not in variables:
+                print(f"Error: Variable {current_token()[1]} is not declared.")
+                return False
+        
+            advance()
+            
+        else:
+            advance()
+            
+    return True 
