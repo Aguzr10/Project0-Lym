@@ -9,7 +9,7 @@ def lexer(code):
     Manages keywords, symbols, directions, and numbers.
     Does not use external libraries or classes.
     """
-
+    
     # List of keywords
     keywords = {
         "proc", "while", "if", "else", "repeatTimes", "for", "move", "jump", "goto",
@@ -103,7 +103,7 @@ def parser(tokens):
                 if not parse_procedure():
                     return False
             elif current_token()[0] == "IDENTIFIER":
-                if current_token()[1] not in variables and current_token()[1] not in procedures:
+                if current_token()[1] not in variables:
                     print(f"Error: Variable {current_token()[1]} is not declared.")
                     return False
             advance()
@@ -113,7 +113,7 @@ def parser(tokens):
         advance()
 
         return True
-
+    
     def parse_variable_declaration():
         # Verifies variable declaration (| var1 var2 ... |)
         if current_token() is None or current_token()[0] != "SYMBOL" or current_token()[1] != "|":
@@ -143,7 +143,7 @@ def parser(tokens):
             if current_token()[1] not in variables and current_token()[1] not in procedures:
                 print(f"Error: Variable {current_token()[1]} is not declared.")
                 return False
-
+        
             advance()
 
         else:
