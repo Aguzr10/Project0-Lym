@@ -53,31 +53,24 @@ def parser(tokens):
         pos += 1
 
     def parse_variable_declaration():
-        advance()  # Skip 'new'
-        if not (current_token()[0] == "KEYWORD" and current_token()[1] == "var"):
+        if current_token()[1] != "|":
             return False
-        advance()  # Skip 'var'
+        advance()  # Skip '|'
         
-        while True:
+        while current_token()[1] != "|":
             if current_token()[0] != "IDENTIFIER":
                 return False
-            var_name = current_token()[1]
-            variables.add(var_name)
+            variables.add(current_token()[1])
             advance()
-
-            if current_token() and current_token()[1] == "=":
-                advance()  # Skip '='
-                if current_token()[0] not in ["NUMBER", "IDENTIFIER"]:
-                    return False
+            if current_token()[1] == ",":
                 advance()
-            
-            if current_token() and current_token()[1] == ",":
-                advance()
-            else:
-                break
+        
+        advance()  # Skip '|'
         return True
 
     def parse_procedure():
+        if current_token()[0] != "IDENTIFIER":
+            return False
         proc_name = current_token()[1]
         advance()
         
@@ -86,9 +79,11 @@ def parser(tokens):
         advance()  # Skip ':'
         
         params = []
-        while current_token() and current_token()[0] == "IDENTIFIER":
+        while current_token()[0] == "IDENTIFIER":
             params.append(current_token()[1])
             advance()
+            if current_token()[1] == "and":
+                advance()
         
         procedures[proc_name] = params
         
@@ -96,7 +91,10 @@ def parser(tokens):
             return False
         advance()  # Skip '['
         
-        while current_token() and current_token()[1] != "]":
+        if not parse_variable_declaration():
+            return False
+        
+        while current_token()[1] != "]":
             if not parse_statement():
                 return False
         advance()  # Skip ']'
@@ -106,9 +104,12 @@ def parser(tokens):
         advance()  # Skip 'if'
         if not parse_condition():
             return False
+        if current_token()[1] != "then":
+            return False
+        advance()  # Skip 'then'
         if not parse_block():
             return False
-        if current_token() and current_token()[1] == "else":
+        if current_token()[1] == "else":
             advance()  # Skip 'else'
             if not parse_block():
                 return False
@@ -118,6 +119,9 @@ def parser(tokens):
         advance()  # Skip 'while'
         if not parse_condition():
             return False
+        if current_token()[1] != "do":
+            return False
+        advance()  # Skip 'do'
         if not parse_block():
             return False
         return True
@@ -130,15 +134,13 @@ def parser(tokens):
             return False
         advance()  # Skip '('
         
-        while current_token() and current_token()[1] != ")":
+        while current_token()[1] != ")":
             if current_token()[0] not in ["NUMBER", "IDENTIFIER"]:
                 return False
             advance()
-            if current_token() and current_token()[1] == ",":
+            if current_token()[1] == ",":
                 advance()
         
-        if current_token()[1] != ")":
-            return False
         advance()  # Skip ')'
         return True
 
@@ -166,7 +168,7 @@ def parser(tokens):
             return False
         advance()
         
-        while current_token() and current_token()[1] != "}":
+        while current_token()[1] != "}":
             if not parse_statement():
                 return False
         advance()
