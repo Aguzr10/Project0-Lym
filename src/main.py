@@ -25,4 +25,8 @@ if __name__ == "__main__":
     if codigo is not None:  
         tokens = lexer(codigo)
         result = parser(tokens)  
-        print(result)  # Should print True if the code is valid, False if not
+        
+        if result:
+            print("The code is valid!")
+        else:
+            print("The code is not valid.")
