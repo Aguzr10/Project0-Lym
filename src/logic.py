@@ -59,13 +59,15 @@ def parser(tokens):
     """
     
     pos = 0
+    procedures = set()
+    variables = set()
+    
     
     def current_token():
         return tokens[pos] if pos < len(tokens) else None
     
     def advance():
-        # advances to the next token and returns True if there are more tokens
-        
+        # advances to the next token and returns True if there are more tokens        
         nonlocal pos
         pos += 1
         return pos < len(tokens)
@@ -75,29 +77,34 @@ def parser(tokens):
         
         if current_token() is None or current_token()[0] != "IDENTIFIER":
             return False
+        proc_name = current_token()[1]
         advance()
-        
-        if current_token() is not None or current_token()[0] == "SYMBOL" and current_token()[1] == ":":
-            advance()
-            if current_token() is None or current_token()[0] != "IDENTIFIER":
-                return False
-            advance()
-            
+
+        if current_token() is None or current_token()[0] != "SYMBOL" or current_token()[1] != ":":
+            return False
+        advance()
+
+        # Add procedure to procedure set
+        procedures.add(proc_name)
+
         if current_token() is None or current_token()[0] != "SYMBOL" or current_token()[1] != "[":
             return False
         advance()
+
+        return parse_block()        
         
-        return parse_block()
     
     def parse_block():
         # verifies structure within a code
         
         while current_token() is not None and current_token()[0] != "SYMBOL" and current_token()[1] != "]":
+            if current_token()[0] == "KEYWORD" and current_token()[1] == "proc":
+                if not parse_procedure():
+                    return False
             advance()
-            
+
         if current_token() is None or current_token()[0] != "SYMBOL" or current_token()[1] != "]":
             return False
-        
         advance()
         return True
     
@@ -105,8 +112,6 @@ def parser(tokens):
         if current_token()[0] == "KEYWORD" and current_token()[1] == "proc":
             advance()
             if not parse_procedure():
-                return False
-            else: 
                 return False
     
     return True
