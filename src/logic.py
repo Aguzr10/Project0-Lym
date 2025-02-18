@@ -7,28 +7,34 @@ def lexer(code):
     Lexical analyzer for the robot language.
     Converts code into a list of tokens.
     Manages keywords, symbols, directions, and numbers.
+    Does not use external libraries or classes.
     """
+
+    # List of keywords
     keywords = {
-        "proc", "while", "if", "else", "repeatTimes", "for", "move", "jump", 
-        "goto", "turn", "face", "put", "pick", "canPut", "canPick", "pop", 
-        "facing", "canMove", "canJump", "not", "do", "then", "toThe", "inDir", 
-        "ofType", "with", "new", "var", "exec"
+        "proc", "while", "if", "else", "repeatTimes", "for", "move", "jump", "goto",
+        "turn", "face", "put", "pick", "canPut", "canPick", "pop", "facing", "canMove",
+        "canJump", "not", "do", "then", "toThe", "inDir", "ofType", "with"
     }
-    
-    symbols = {"|", "[", "]", ".", ":=", ":", "=", "(", ")", ",", "{", "}", ";"}
-    
-    # Insert spaces around symbols to tokenize properly
+
+    # Set of symbols to be recognized
+    symbols = {"|", "[", "]", ".", ":=", ":"}
+
+    # Insert spaces around symbols to separate them from other tokens
     code = code.replace(":=", " := ")
-    for sym in symbols:
-        code = code.replace(sym, f" {sym} ")
-    
-    tokens = []
+    code = code.replace(":", " : ")
+    code = code.replace("[", " [ ")
+    code = code.replace("]", " ] ")
+    code = code.replace("|", " | ")
+    code = code.replace(".", " . ")
+
+    # Convert into a list of tokens based on spaces
     words = code.split()
-    
+
+    tokens = []  # Final token list, every token is a tuple, classified below
     for word in words:
-        word_lower = word.lower()
-        if word_lower in keywords:
-            tokens.append(("KEYWORD", word_lower))
+        if word in keywords:
+            tokens.append(("KEYWORD", word))
         elif word in symbols:
             tokens.append(("SYMBOL", word))
         elif word.startswith("#"):
@@ -37,139 +43,110 @@ def lexer(code):
             tokens.append(("NUMBER", word))
         else:
             tokens.append(("IDENTIFIER", word))
-    
+
     return tokens
-    
+
 
 def parser(tokens):
-    pos = 0
-    procedures = {}
-    variables = set()
+    """
+    Verifies if the syntax of the code is correct.
+    """
 
+    pos = 0
+    procedures = set()  # Set for procedures
+    variables = set()   # Set for declared variables
+    procedure_params = {}  # Dictionary for procedure parameters
+    
     def current_token():
         return tokens[pos] if pos < len(tokens) else None
 
     def advance():
         nonlocal pos
         pos += 1
-
-    def match(expected_type, expected_value=None):
-        token = current_token()
-        if token and token[0] == expected_type and (expected_value is None or token[1] == expected_value):
-            advance()
-            return True
-        return False
-
-    def parse_variable_declaration():
-        if not match("SYMBOL", "|"):
-            return False
-        while current_token() and current_token()[1] != "|":
-            if not match("IDENTIFIER"):
-                return False
-            variables.add(tokens[pos - 1][1])
-            if current_token() and current_token()[1] == ",":
-                advance()
-        return match("SYMBOL", "|")
+        return pos < len(tokens)
 
     def parse_procedure():
-        if not match("KEYWORD", "proc"):
+        # Verifies procedure structure
+        if current_token() is None or current_token()[0] != "IDENTIFIER":
             return False
-        if not match("IDENTIFIER"):
-            return False
-        proc_name = tokens[pos - 1][1]
-        procedures[proc_name] = []
+        proc_name = current_token()[1]
+        advance()
 
-        if match("SYMBOL", ":"):
-            while current_token() and current_token()[0] == "IDENTIFIER":
-                procedures[proc_name].append(current_token()[1])
-                advance()
-        
-        if not match("SYMBOL", "["):
+        if current_token() is None or current_token()[0] != "SYMBOL" or current_token()[1] != ":":
             return False
-        while current_token() and current_token()[1] != "]":
-            if not parse_statement():
-                return False
-        return match("SYMBOL", "]")
+        advance()
 
-    def parse_if():
-        if not match("KEYWORD", "if"):
+        # Add procedure to procedure set (to handle recursion)
+        if proc_name in procedures:
+            print(f"Error: Procedure {proc_name} is already defined.")
             return False
-        if not parse_condition():
-            return False
-        if not match("KEYWORD", "then"):
-            return False
-        if not parse_block():
-            return False
-        if current_token() and current_token()[1] == "else":
+        procedures.add(proc_name)
+
+        # Parse parameters (if any)
+        params = []
+        if current_token() is not None and current_token()[0] == "IDENTIFIER":
+            params.append(current_token()[1])
             advance()
-            if not parse_block():
-                return False
-        return True
 
-    def parse_while():
-        if not match("KEYWORD", "while"):
+        if current_token() is None or current_token()[0] != "SYMBOL" or current_token()[1] != "[":
             return False
-        if not parse_condition():
-            return False
-        if not match("KEYWORD", "do"):
-            return False
-        if not parse_block():
-            return False
-        return True
+        advance()
 
-    def parse_procedure_call():
-        if not match("IDENTIFIER"):
-            return False
-        proc_name = tokens[pos - 1][1]
-        if not match("SYMBOL", ":"):
-            return False
-        while current_token() and current_token()[1] != ".":
-            if not match("NUMBER") and not match("IDENTIFIER"):
-                return False
-            if current_token() and current_token()[1] == ",":
-                advance()
-        return match("SYMBOL", ".")
+        # Add procedure parameters to the dictionary
+        procedure_params[proc_name] = params
 
-    def parse_condition():
-        if match("SYMBOL", "("):
-            if not parse_expression():
-                return False
-            return match("SYMBOL", ")")
-        return parse_expression()
-
-    def parse_expression():
-        if not match("IDENTIFIER") and not match("NUMBER"):
-            return False
-        return True
+        return parse_block()
 
     def parse_block():
-        if not match("SYMBOL", "["):
+        while current_token() is not None and current_token()[0] != "SYMBOL" and current_token()[1] != "]":
+            if current_token()[0] == "KEYWORD" and current_token()[1] == "proc":
+                if not parse_procedure():
+                    return False
+            elif current_token()[0] == "IDENTIFIER":
+                if current_token()[1] not in variables and current_token()[1] not in procedures:
+                    print(f"Error: Variable {current_token()[1]} is not declared.")
+                    return False
+            advance()
+
+        if current_token() is None or current_token()[0] != "SYMBOL" or current_token()[1] != "]":
             return False
-        while current_token() and current_token()[1] != "]":
-            if not parse_statement():
-                return False
-        return match("SYMBOL", "]")
+        advance()
 
-    def parse_statement():
-        if current_token()[0] == "KEYWORD":
-            if current_token()[1] == "if":
-                return parse_if()
-            elif current_token()[1] == "while":
-                return parse_while()
-        elif current_token()[0] == "IDENTIFIER":
-            if current_token()[1] in procedures:
-                return parse_procedure_call()
-        return match("SYMBOL", ".")
+        return True
 
-    # Main parsing logic
+    def parse_variable_declaration():
+        # Verifies variable declaration (| var1 var2 ... |)
+        if current_token() is None or current_token()[0] != "SYMBOL" or current_token()[1] != "|":
+            return False
+        advance()
+
+        while current_token() is not None and current_token()[0] == "IDENTIFIER":
+            variables.add(current_token()[1])  # Add the declared variable to the set
+            advance()
+
+        if current_token() is None or current_token()[0] != "SYMBOL" or current_token()[1] != "|":
+            return False
+        advance()
+        return True
+
     while pos < len(tokens):
-        if current_token()[0] == "SYMBOL" and current_token()[1] == "|":
-            if not parse_variable_declaration():
-                return False
-        elif current_token()[0] == "KEYWORD" and current_token()[1] == "proc":
+        if current_token()[0] == "KEYWORD" and current_token()[1] == "proc":
+            advance()
             if not parse_procedure():
                 return False
+
+        elif current_token()[0] == "SYMBOL" and current_token()[1] == "|":
+            if not parse_variable_declaration():
+                return False
+
+        elif current_token()[0] == "IDENTIFIER":
+            if current_token()[1] not in variables and current_token()[1] not in procedures:
+                print(f"Error: Variable {current_token()[1]} is not declared.")
+                return False
+
+            advance()
+
         else:
             advance()
-    
+
     return True
