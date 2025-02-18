@@ -1,7 +1,7 @@
 # Written by: 
 # Juliana Vera, code: 202411275 email: j.veraq@uniandes.edu.co
 # Alejandro Guzmán code: 202410186 email: a.guzmanr2@uniandes.edu.co
-
+import os
 from logic import lexer
 from logic import parser
 
@@ -11,9 +11,10 @@ def read_file():
     Returns the contents of the file as a text string.
     """
     filename = input("Enter the file name: ")
+    openfile = os.path.join(os.path.dirname(__file__), filename)
     
     try:
-        with open(filename, "r") as file:
+        with open(openfile, "r") as file:
             return file.read()  # Read the entire file as a single string
     except FileNotFoundError:
         print(f"Error: The file '{filename}' was not found.")
